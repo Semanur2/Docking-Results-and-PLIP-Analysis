@@ -1,44 +1,72 @@
-import pandas as pd
-import matplotlib.pyplot as plt
+import pandas as pd  # pandas kütüphanesini yükleyin
 
-# Load the affinity values data with explicit header columns
-affinity_df = pd.read_csv('C:/Users/139sa/Desktop/blac/affinity_values.csv', names=["Ligand", "Affinity"])
+# Affinity verisini doğru bir şekilde oku
+affinity_df = pd.read_csv('C:/Users/139sa/Desktop/blac/affinity_values.csv', sep='\t', header=0, names=["Ligand", "Affinity"])
 
-# Load the hydrogen bond data with explicit header columns
-hbonds_df = pd.read_csv('C:/Users/139sa/Desktop/blac/hydrogen_bonds_results.txt', header=None, names=["Ligand", "H-bond"])
+# H-bond verisini doğru bir şekilde oku
+hbonds_df = pd.read_csv('C:/Users/139sa/Desktop/blac/hydrogen_bonds_results.txt', sep=',', header=0, names=["Ligand", "H-bond"])
 
-# Strip any leading/trailing spaces from the 'Ligand' columns in both dataframes
+# Affinity verisini yazdır
+print("Affinity Data:")
+print(affinity_df.head())
+
+# H-bond verisini yazdır
+print("\nHydrogen Bonds Data:")
+print(hbonds_df.head())
+
+# Eğer boşluk varsa temizleyelim
 affinity_df['Ligand'] = affinity_df['Ligand'].str.strip()
 hbonds_df['Ligand'] = hbonds_df['Ligand'].str.strip()
 
-# Convert Affinity and H-bond columns to numeric (in case they are not already)
-affinity_df['Affinity'] = pd.to_numeric(affinity_df['Affinity'], errors='coerce')
-hbonds_df['H-bond'] = pd.to_numeric(hbonds_df['H-bond'], errors='coerce')
-
-# Merge the dataframes on the "Ligand" column
+# Affinity ve H-bond verilerini birleştirelim
 merged_df = pd.merge(affinity_df, hbonds_df, on="Ligand")
 
-# Drop rows with any missing values (if any exist)
+# Eksik değerleri (NaN) temizleyelim
 merged_df.dropna(inplace=True)
 
-# Sort by H-bond or Affinity to keep data consistent for plotting
-merged_df = merged_df.sort_values(by=['H-bond'], ascending=False)
-
-# Print the first few rows to confirm the merge worked correctly
+# Birleştirilen veriyi görelim
+print("\nMerged Data:")
 print(merged_df.head())
 
-# Plot the data
-plt.figure(figsize=(10, 6))
-plt.scatter(merged_df['H-bond'], merged_df['Affinity'], color='blue', label='Data points')
 
-# Label the axes and title
-plt.xlabel('Hydrogen Bonds')
-plt.ylabel('Affinity (kcal/mol)')
-plt.title('Hydrogen Bonds vs Affinity Values')
+import matplotlib.pyplot as plt
 
-# Remove the grid
-plt.grid(False)
+# Veriyi sıralayalım
+merged_df = merged_df.sort_values(by=['H-bond'], ascending=False)
 
-# Display the plot
-plt.legend()
+# Grafik boyutlarını ayarlayalım
+plt.figure(figsize=(12, 8))
+
+# Renkli noktalar, Affinity'ye göre renk değişimi ve boyut değişimi
+scatter = plt.scatter(merged_df['H-bond'], merged_df['Affinity'], 
+                      c=merged_df['Affinity'], cmap='viridis', s=100, edgecolors='k', alpha=0.7)
+
+# Eksen etiketlerini ve başlıkları ekleyelim
+plt.xlabel('Hydrogen Bonds', fontsize=14)
+plt.ylabel('Affinity (kcal/mol)', fontsize=14)
+plt.title('Hydrogen Bonds vs Affinity Values', fontsize=16)
+
+# Grafik üzerine her veri noktasının ismini ekleyelim
+for i, row in merged_df.iterrows():
+    plt.text(row['H-bond'], row['Affinity'], row['Ligand'], fontsize=9, ha='right', va='bottom')
+
+# Grid'i kaldırıp, rengini değiştirelim
+plt.grid(True, linestyle='--', alpha=0.7)
+
+# Renk barı ekleyelim
+cbar = plt.colorbar(scatter)
+cbar.set_label('Affinity (kcal/mol)', fontsize=12)
+
+# X ve Y eksenleri için sınırları ayarlayalım
+plt.xlim(0, merged_df['H-bond'].max() + 1)
+plt.ylim(merged_df['Affinity'].min() - 1, merged_df['Affinity'].max() + 1)
+
+# Grafiği gösterelim
+plt.legend(['Data points'], loc='upper right')
+plt.tight_layout()
+
+# Yüksek çözünürlükte kaydedelim
+plt.savefig('hydrogen_bonds_affinity_plot.png', dpi=300)
+
+# Grafiği gösterelim
 plt.show()
